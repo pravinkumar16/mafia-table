@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { SKIP, type PlayerView } from "@/game";
-import { MIN_PLAYERS, ROLE_INFO } from "@/game/roles";
+import { SKIP, isMafiaTeam, type PlayerView } from "@/game";
+import { MIN_PLAYERS, ROLE_INFO, validateRules } from "@/game/roles";
 import type { ClientMessage } from "@/lib/protocol";
 import { formatClock } from "@/hooks/useCountdown";
 import RoleCard from "./RoleCard";
@@ -55,7 +55,7 @@ export function TableCenter({ view, secondsLeft }: { view: PlayerView; secondsLe
         </motion.span>
       ) : (
         <span className="font-display text-3xl font-bold text-cream sm:text-4xl">
-          {view.phase === "lobby" ? `${count} / ${MIN_PLAYERS}+` : view.winner === "village" ? "Village wins" : "Mafia win"}
+          {view.phase === "lobby" ? `${count} / ${MIN_PLAYERS}+` : view.winner === "village" ? "Village wins" : view.winner === "jester" ? "Jester wins" : "Mafia win"}
         </span>
       )}
       {view.phase === "lobby" && <span className="text-xs text-cream/60">{count} {count === 1 ? "person" : "people"} at the table</span>}
@@ -74,6 +74,7 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
 
   if (v.phase === "lobby") {
     const n = v.players.length;
+    const rulesProblem = n >= MIN_PLAYERS ? validateRules(n, v.rules) : null;
     return (
       <Card title="Waiting for players">
         <p className="text-sm text-muted">
@@ -84,9 +85,14 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
         <InviteLink url={inviteUrl} />
         {you.isHost ? (
           <div className="mt-3 flex flex-col gap-2">
-            <button className="btn-amber w-full py-3 text-lg" disabled={n < MIN_PLAYERS} onClick={() => send({ t: "start" })}>
+            <button className="btn-amber w-full py-3 text-lg" disabled={n < MIN_PLAYERS || !!rulesProblem} onClick={() => send({ t: "start" })}>
               Start game
             </button>
+            {rulesProblem && (
+              <p role="alert" className="rounded-xl bg-blood/10 px-3 py-2 text-xs text-blood">
+                {rulesProblem} Open <b>House rules</b> to fix it.
+              </p>
+            )}
             {showBots && (
               <button
                 className="btn-ghost w-full text-sm"
@@ -124,7 +130,7 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
       return (
         <Card title="Shh…" night>
           <p className="text-sm text-[#cfe0ff]">Close your eyes. The city sleeps.</p>
-          {you.role === "mafia" && v.nightStep !== "mafia" && <p className="mt-2 text-xs text-muted">Your crew has made its choice.</p>}
+          {isMafiaTeam(you.role) && v.nightStep !== "mafia" && <p className="mt-2 text-xs text-muted">Your crew has made its choice.</p>}
           <DetectiveNotes view={v} />
         </Card>
       );
@@ -165,12 +171,24 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
       <Card title="Morning report">
         {victim ? (
           <p>
-            <b>{victim.name}</b> didn&apos;t survive the night. They were the <b>{ROLE_INFO[victim.role!]?.title}</b>.
+            <b>{victim.name}</b> didn&apos;t survive the night.{" "}
+            {victim.role ? (
+              <>
+                They were the <b>{ROLE_INFO[victim.role].title}</b>.
+              </>
+            ) : (
+              "Their role stays a secret."
+            )}
           </p>
         ) : m?.saved ? (
           <p>The Mafia struck, but the Doctor saved their target. 🩺</p>
         ) : (
           <p>Nobody died last night.</p>
+        )}
+        {!!m?.alsoDied.length && (
+          <p className="mt-2 text-sm">
+            💔 {m.alsoDied.map((id) => nameOf(v, id)).join(" and ")} died with them: secret Lovers.
+          </p>
         )}
         {!you.alive && <GhostNote inline />}
         <DetectiveNotes view={v} />
@@ -182,6 +200,10 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
     return (
       <Card title="Discussion">
         <p className="text-sm text-muted">Talk it out. Who&apos;s been acting shifty? Voting starts when the timer runs out.</p>
+        {v.immuneId && <p className="mt-2 text-sm">🛡️ <b>{nameOf(v, v.immuneId)}</b> is shielded from today&apos;s vote.</p>}
+        {v.hauntedIds.length > 0 && (
+          <p className="mt-2 text-sm">👻 A ghost pointed at <b>{v.hauntedIds.map((id) => nameOf(v, id)).join(" and ")}</b> today.</p>
+        )}
         {you.isHost && (
           <button className="btn-ghost mt-3 w-full" onClick={() => send({ t: "skipDiscussion" })}>
             ⏭ Skip to the vote
@@ -195,10 +217,14 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
 
   if (v.phase === "vote") {
     if (!you.alive) return <GhostNote />;
-    const ids = v.players.filter((p) => p.alive && p.id !== you.id).map((p) => p.id);
+    const ids = v.players.filter((p) => p.alive && p.id !== you.id && p.id !== v.immuneId).map((p) => p.id);
     return (
       <Card title="Cast your vote">
         <p className="mb-2 text-xs text-muted">Votes stay secret until everyone has voted or time runs out. You can change yours until then.</p>
+        {v.immuneId && <p className="mb-2 text-xs">🛡️ <b>{nameOf(v, v.immuneId)}</b> is shielded today, so they can&apos;t be voted for.</p>}
+        {v.hauntedIds.length > 0 && (
+          <p className="mb-2 text-xs">👻 A ghost pointed at <b>{v.hauntedIds.map((id) => nameOf(v, id)).join(" and ")}</b>.</p>
+        )}
         <TargetList view={v} ids={ids} selected={you.myVote} onPick={(id) => send({ t: "vote", choice: id })} />
         <button
           className={`btn mt-2 w-full border ${you.myVote === SKIP ? "border-amber bg-amber/20" : "border-white/15 bg-white/5"}`}
@@ -218,12 +244,28 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
     const out = v.players.find((p) => p.id === r.eliminatedId);
     return (
       <Card title="The verdict">
-        {out ? (
+        {r.pending ? (
           <p className="mb-3">
-            <b>{out.name}</b> is out. They were the <b>{ROLE_INFO[out.role!]?.title}</b>.
+            <b>{nameOf(v, r.eliminatedId)}</b> has the most votes. The verdict is about to be read…
+          </p>
+        ) : r.overturned ? (
+          <p className="mb-3">The Judge overturned the verdict. Nobody leaves today. ⚖️</p>
+        ) : out ? (
+          <p className="mb-3">
+            <b>{out.name}</b> is out.{" "}
+            {out.role ? (
+              <>
+                They were the <b>{ROLE_INFO[out.role].title}</b>.
+              </>
+            ) : (
+              "Their role stays a secret."
+            )}
           </p>
         ) : (
           <p className="mb-3">Nobody is eliminated today.</p>
+        )}
+        {r.immuneId && (
+          <p className="mb-2 text-xs text-muted">🛡️ {nameOf(v, r.immuneId)} was shielded, so votes against them didn&apos;t count.</p>
         )}
         <ul className="space-y-1.5">
           {rows.map(([id, c]) => (

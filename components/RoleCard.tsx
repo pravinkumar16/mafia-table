@@ -9,6 +9,14 @@ const ART: Record<Role, { emoji: string; bg: string }> = {
   doctor: { emoji: "🩺", bg: "linear-gradient(160deg,#0f4a3a,#3fb58a)" },
   detective: { emoji: "🔍", bg: "linear-gradient(160deg,#1b2a4d,#5b8def)" },
   villager: { emoji: "🧑‍🌾", bg: "linear-gradient(160deg,#5a3a12,#f2b45a)" },
+  godfather: { emoji: "🎩", bg: "linear-gradient(160deg,#2a0a12,#a3283c)" },
+  terrorist: { emoji: "💣", bg: "linear-gradient(160deg,#4a2a0a,#e0742b)" },
+  judge: { emoji: "⚖️", bg: "linear-gradient(160deg,#2b2b3d,#8a8fb5)" },
+  lawyer: { emoji: "💼", bg: "linear-gradient(160deg,#2a3340,#7a93ad)" },
+  heir: { emoji: "👑", bg: "linear-gradient(160deg,#3d2f0a,#c9a227)" },
+  defector: { emoji: "🎭", bg: "linear-gradient(160deg,#3a1f4a,#9b6bc4)" },
+  mayor: { emoji: "🎖️", bg: "linear-gradient(160deg,#0f3d3a,#3fb5a8)" },
+  jester: { emoji: "🃏", bg: "linear-gradient(160deg,#4a1f3a,#d94f9b)" },
 };
 
 /** Face-down card that flips to show your role. */

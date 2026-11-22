@@ -4,11 +4,17 @@ import type { Channel, PlayerView, VoteChoice } from "../game";
 export type ClientMessage =
   | { t: "join"; name: string; bodyColor: string; skinColor: string }
   | { t: "leave" }
+  | { t: "setRules"; rules: Record<string, unknown> }
   | { t: "start" }
   | { t: "addBots"; count: number }
   | { t: "ready" }
   | { t: "night"; targetId: string }
   | { t: "vote"; choice: VoteChoice }
+  | { t: "watch" }
+  | { t: "haunt"; targetId: string }
+  | { t: "bomb"; targetId: string }
+  | { t: "overturn" }
+  | { t: "shield"; targetId: string }
   | { t: "skipDiscussion" }
   | { t: "playAgain" }
   | { t: "chat"; channel: Channel; text: string }
@@ -42,14 +48,25 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
     case "leave":
     case "start":
     case "ready":
+    case "overturn":
+    case "watch":
     case "skipDiscussion":
     case "playAgain":
       return { t: m.t };
+    case "setRules":
+      if (typeof m.rules !== "object" || m.rules === null || Array.isArray(m.rules)) return null;
+      return { t: "setRules", rules: m.rules as Record<string, unknown> };
     case "addBots":
       if (typeof m.count !== "number" || !Number.isFinite(m.count)) return null;
       return { t: "addBots", count: Math.max(1, Math.min(16, Math.floor(m.count))) };
     case "night":
       return str(m.targetId, 64) ? { t: "night", targetId: m.targetId } : null;
+    case "haunt":
+      return str(m.targetId, 64) ? { t: "haunt", targetId: m.targetId } : null;
+    case "bomb":
+      return str(m.targetId, 64) ? { t: "bomb", targetId: m.targetId } : null;
+    case "shield":
+      return str(m.targetId, 64) ? { t: "shield", targetId: m.targetId } : null;
     case "vote":
       return str(m.choice, 64) ? { t: "vote", choice: m.choice } : null;
     case "chat":

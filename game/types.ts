@@ -1,6 +1,38 @@
 // Pure game types. No network, no UI.
 
-export type Role = "mafia" | "doctor" | "detective" | "villager";
+export type Role =
+  | "mafia"
+  | "doctor"
+  | "detective"
+  | "villager"
+  | "godfather"
+  | "terrorist"
+  | "judge"
+  | "lawyer"
+  | "heir"
+  | "defector"
+  | "mayor"
+  | "jester";
+
+/** Roles the host can switch on and off. The Doctor and Detective are always in play. */
+export type OptionalRole = "godfather" | "terrorist" | "judge" | "lawyer" | "heir" | "defector" | "mayor" | "jester";
+
+export type DiscussionSeconds = 60 | 90 | 120 | 180 | 300;
+
+/** House rules, chosen by the host in the lobby. Public to everyone at the table. */
+export interface Rules {
+  mafiaCount: "auto" | 1 | 2 | 3 | 4;
+  roles: Record<OptionalRole, boolean>;
+  /** Two town players are secretly in love: if one dies, so does the other. */
+  lovers: boolean;
+  /** Sleepers may keep watch at night for a noisy clue. */
+  nightWatch: boolean;
+  /** Each ghost may point the town at someone, once a game. */
+  ghostHaunts: boolean;
+  discussionSeconds: DiscussionSeconds;
+  /** Reveal a player's role when they die or are voted out. */
+  revealRoles: boolean;
+}
 
 export type Phase =
   | "lobby"
@@ -16,7 +48,7 @@ export type NightStep = "mafia" | "doctor" | "detective";
 
 export type Channel = "public" | "mafia" | "ghost";
 
-export type Winner = "village" | "mafia";
+export type Winner = "village" | "mafia" | "jester";
 
 export const SKIP = "skip" as const;
 export type VoteChoice = string | typeof SKIP;
@@ -38,6 +70,22 @@ export interface Player {
   /** set once the role is public (death, vote-out or game over) */
   roleRevealed: boolean;
   ready: boolean;
+  /** Secret partner, if this player is one of the Lovers. */
+  lover: string | null;
+  /** A once-a-game power (Terrorist, Judge, Lawyer) has been spent. */
+  used: boolean;
+  /** Started as a Defector and has since joined the Mafia. */
+  defected: boolean;
+  /** This ghost has used its one haunt. */
+  hauntUsed: boolean;
+}
+
+/** A private message only its owner can read (heir inheritance, defection, lovers). */
+export interface PrivateNote {
+  id: number;
+  playerId: string;
+  round: number;
+  text: string;
 }
 
 export interface ChatMessage {
@@ -63,11 +111,20 @@ export type NarrationEvent =
   | "doctorWake"
   | "detectiveWake"
   | "morningDeath"
+  | "morningDeathHidden"
   | "morningSaved"
   | "morningQuiet"
+  | "loversFall"
+  | "terrorBomb"
+  | "judgeOverturn"
+  | "lawyerShield"
+  | "voteProposed"
+  | "jesterWins"
+  | "ghostPoints"
   | "dayStart"
   | "voteStart"
   | "voteElimination"
+  | "voteEliminationHidden"
   | "voteNoElimination"
   | "villageWins"
   | "mafiaWins";
@@ -84,12 +141,16 @@ export interface NightState {
   mafiaVotes: Record<string, string>;
   doctorTarget: string | null;
   detectiveTarget: string | null;
+  /** Sleepers keeping watch tonight (Night watch rule). */
+  watchers: string[];
 }
 
 export interface MorningReport {
   round: number;
   killedId: string | null;
   saved: boolean;
+  /** Others who died with the victim (Lovers). */
+  alsoDied: string[];
 }
 
 export interface VoteReport {
@@ -98,7 +159,12 @@ export interface VoteReport {
   tally: Record<string, number>;
   /** voter id -> choice. Only public after the vote phase ends. */
   ballots: Record<string, VoteChoice>;
+  /** The town's choice. While `pending`, it's only proposed and a Judge may still overturn it. */
   eliminatedId: string | null;
+  pending: boolean;
+  overturned: boolean;
+  /** Votes against this player were void (the Lawyer's shield). */
+  immuneId: string | null;
 }
 
 export interface Settings {
@@ -134,6 +200,13 @@ export interface GameState {
   chat: ChatMessage[];
   nextChatId: number;
   settings: Settings;
+  rules: Rules;
+  /** The Lawyer's shield for the current day. */
+  immune: { round: number; targetId: string } | null;
+  /** Public haunts: a ghost pointed at this player on this round. */
+  haunts: { round: number; targetId: string }[];
+  notes: PrivateNote[];
+  nextNoteId: number;
 }
 
 export type Action =
@@ -149,10 +222,16 @@ export type Action =
   | { type: "CONNECT"; playerId: string; now: number }
   | { type: "DISCONNECT"; playerId: string; now: number }
   | { type: "ADD_BOTS"; playerId: string; count: number; now: number }
+  | { type: "SET_RULES"; playerId: string; rules: unknown; now: number }
   | { type: "START"; playerId: string; now: number }
   | { type: "READY"; playerId: string; now: number }
   | { type: "NIGHT_ACTION"; playerId: string; targetId: string; now: number }
   | { type: "VOTE"; playerId: string; choice: VoteChoice; now: number }
+  | { type: "TERRORIST_BOMB"; playerId: string; targetId: string; now: number }
+  | { type: "JUDGE_OVERTURN"; playerId: string; now: number }
+  | { type: "LAWYER_SHIELD"; playerId: string; targetId: string; now: number }
+  | { type: "NIGHT_WATCH"; playerId: string; now: number }
+  | { type: "GHOST_HAUNT"; playerId: string; targetId: string; now: number }
   | { type: "SKIP_DISCUSSION"; playerId: string; now: number }
   | { type: "PLAY_AGAIN"; playerId: string; now: number }
   | { type: "CHAT"; playerId: string; channel: Channel; text: string; now: number }

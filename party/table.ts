@@ -3,7 +3,7 @@
 // Every state message is built per connection with viewFor(), so a socket
 // only ever receives the filtered view of the player it belongs to.
 
-import { createGame, findPlayer, planBotActions, reduce, viewFor, type Action, type GameState } from "../game";
+import { createGame, findPlayer, migrateState, planBotActions, reduce, viewFor, type Action, type GameState } from "../game";
 import { isValidSecret, parseClientMessage, type ServerMessage } from "../lib/protocol";
 
 export type Outbox = Array<[connId: string, msg: ServerMessage]>;
@@ -30,7 +30,7 @@ export class Table {
   ) {
     this.botsAllowed = opts.botsAllowed;
     this.newId = opts.newId;
-    this.state = opts.saved?.state ?? createGame(code, opts.seed, opts.now);
+    this.state = opts.saved?.state ? migrateState(opts.saved.state) : createGame(code, opts.seed, opts.now);
     this.secrets = opts.saved?.secrets ?? {};
   }
   readonly botsAllowed: boolean;
@@ -127,6 +127,8 @@ export class Table {
         if (this.state.phase === "lobby") delete this.secrets[secret];
         for (const [cid, sec] of this.conns) if (sec === secret) out.push([cid, { t: "welcome", playerId: this.playerIdFor(secret), botsAllowed: this.botsAllowed }]);
         return;
+      case "setRules":
+        return fail(this.dispatch({ type: "SET_RULES", playerId: pid, rules: msg.rules, now }));
       case "start":
         return fail(this.dispatch({ type: "START", playerId: pid, now }));
       case "addBots":
@@ -138,6 +140,16 @@ export class Table {
         return fail(this.dispatch({ type: "NIGHT_ACTION", playerId: pid, targetId: msg.targetId, now }));
       case "vote":
         return fail(this.dispatch({ type: "VOTE", playerId: pid, choice: msg.choice, now }));
+      case "watch":
+        return fail(this.dispatch({ type: "NIGHT_WATCH", playerId: pid, now }));
+      case "haunt":
+        return fail(this.dispatch({ type: "GHOST_HAUNT", playerId: pid, targetId: msg.targetId, now }));
+      case "bomb":
+        return fail(this.dispatch({ type: "TERRORIST_BOMB", playerId: pid, targetId: msg.targetId, now }));
+      case "overturn":
+        return fail(this.dispatch({ type: "JUDGE_OVERTURN", playerId: pid, now }));
+      case "shield":
+        return fail(this.dispatch({ type: "LAWYER_SHIELD", playerId: pid, targetId: msg.targetId, now }));
       case "skipDiscussion":
         return fail(this.dispatch({ type: "SKIP_DISCUSSION", playerId: pid, now }));
       case "playAgain":

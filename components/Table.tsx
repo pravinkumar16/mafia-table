@@ -45,6 +45,14 @@ const ROLE_CHIP: Record<string, string> = {
   doctor: "bg-emerald-400/90 text-ink",
   detective: "bg-night/90 text-ink",
   villager: "bg-amber/90 text-ink",
+  godfather: "bg-blood text-white",
+  terrorist: "bg-orange-500/90 text-ink",
+  judge: "bg-slate-300/90 text-ink",
+  lawyer: "bg-sky-300/90 text-ink",
+  heir: "bg-yellow-400/90 text-ink",
+  defector: "bg-purple-400/90 text-ink",
+  mayor: "bg-teal-300/90 text-ink",
+  jester: "bg-pink-400/90 text-ink",
 };
 
 export default function Table(props: Props) {
@@ -148,6 +156,11 @@ function Seat({
         {picks > 0 && (
           <span className="absolute -right-1 top-1 z-20 rounded-full bg-blood px-1.5 py-0.5 text-[11px] font-bold text-white shadow">
             🔪{picks > 1 ? `×${picks}` : ""}
+          </span>
+        )}
+        {view.hauntedIds.includes(p.id) && (
+          <span className="absolute -top-1 right-1 z-20 text-xl" title="A ghost pointed at them" aria-label="haunted">
+            👻
           </span>
         )}
         {view.phase === "vote" && p.hasVoted && (

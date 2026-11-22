@@ -63,12 +63,18 @@ export default function ChatPanel({
       )}
       <div ref={listRef} className="scrollbar-thin min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
         {messages.length === 0 && <p className="py-6 text-center text-sm text-muted">No messages yet.</p>}
-        {messages.map((m) => (
+        {messages.map((m) =>
+          m.fromId === "system" ? (
+            <p key={m.id} className="py-0.5 text-center text-xs italic text-muted">
+              {m.text}
+            </p>
+          ) : (
           <p key={m.id} className="text-sm leading-snug break-words">
             <b className={m.fromId === meId ? "text-amber" : active === "mafia" ? "text-blood" : "text-cream"}>{m.fromName}</b>{" "}
             <span className="text-cream/85">{m.text}</span>
           </p>
-        ))}
+          ),
+        )}
       </div>
       {canWrite ? (
         <form onSubmit={submit} className="mt-2 flex gap-2">

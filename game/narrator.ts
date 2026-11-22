@@ -38,6 +38,11 @@ export const SCRIPT: Record<NarrationEvent, string[]> = {
     "The rooster crows, but {name} doesn't. They were the {role}.",
     "Morning comes, and {name}'s chair is empty. They were the {role}.",
   ],
+  morningDeathHidden: [
+    "The sun rises on bad news. {name} was found at dawn. Their card stays face down.",
+    "The rooster crows, but {name} doesn't. Nobody gets to see their card.",
+    "Morning comes, and {name}'s chair is empty. What they were, the table will never know.",
+  ],
   morningSaved: [
     "Good morning! The Mafia struck in the night, but the Doctor got there first. Everyone wakes up.",
     "A close call! Someone was attacked last night, and the Doctor patched them up.",
@@ -47,6 +52,41 @@ export const SCRIPT: Record<NarrationEvent, string[]> = {
     "A strangely quiet night. Everyone wakes up… for now.",
     "Dawn breaks and every chair is filled. The Mafia must have overslept.",
     "Nobody died last night. Suspicious, isn't it?",
+  ],
+  loversFall: [
+    "{partner} couldn't bear the loss and followed.",
+    "{partner} was secretly in love with them, and the town learns it too late.",
+    "A broken heart does the rest: {partner} is gone as well.",
+  ],
+  terrorBomb: [
+    "{name} slams a button nobody noticed. BOOM. {target} goes with them.",
+    "A shout, a flash, a lot of smoke: {name} takes {target} out with them.",
+    "{name} was the Terrorist all along. {target} was standing too close.",
+  ],
+  judgeOverturn: [
+    "{name} raises a gavel. The Judge overturns the verdict: nobody leaves today.",
+    "Order! {name} is the Judge, and today's verdict is struck from the record.",
+    "The Judge, {name}, shakes their head. The vote doesn't stand.",
+  ],
+  lawyerShield: [
+    "{name} stands up. The Lawyer takes {target} under their wing: the vote can't touch them today.",
+    "{name} is the Lawyer, and {target} is off the table for today's vote.",
+    "Objection! The Lawyer, {name}, has {target} covered. Votes against them won't count.",
+  ],
+  voteProposed: [
+    "The town has chosen {name}. Any last objections before the door closes?",
+    "The votes point at {name}. One more moment for anyone who wants to intervene.",
+    "{name} has the most votes. The verdict is about to be read.",
+  ],
+  jesterWins: [
+    "{name} was the Jester, and the town fell for it. The Jester wins!",
+    "The town votes out {name}, and the Jester cackles all the way to victory. The Jester wins!",
+    "Everyone was so sure. {name} was the Jester. The Jester wins!",
+  ],
+  ghostPoints: [
+    "A chill crosses the table. A ghost drifts over to {name} and points.",
+    "Somewhere in the dark, a ghost points a pale finger at {name}.",
+    "A ghost says nothing, but its finger is aimed squarely at {name}.",
   ],
   dayStart: [
     "Open your eyes. Talk it out — who's been acting shifty?",
@@ -62,6 +102,11 @@ export const SCRIPT: Record<NarrationEvent, string[]> = {
     "The town has spoken. {name} is out — they were the {role}.",
     "With {n} votes, {name} leaves the table. They were the {role}.",
     "{name} is escorted out of town. Their card reads: {role}.",
+  ],
+  voteEliminationHidden: [
+    "The town has spoken. {name} is out. Their card stays hidden.",
+    "With {n} votes, {name} leaves the table, taking their secret with them.",
+    "{name} is escorted out of town. Was it the right call? Nobody will say.",
   ],
   voteNoElimination: [
     "No agreement. Everyone keeps their seat, for now.",

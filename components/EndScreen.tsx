@@ -1,13 +1,17 @@
 "use client";
 import { motion } from "framer-motion";
-import type { PlayerView } from "@/game";
+import { isMafiaTeam, type PlayerView } from "@/game";
 import { ROLE_INFO } from "@/game/roles";
 
 export default function EndScreen({ view, onPlayAgain }: { view: PlayerView; onPlayAgain: () => void }) {
-  const village = view.winner === "village";
-  const players = [...view.players].sort((a, b) => Number(b.role === "mafia") - Number(a.role === "mafia") || a.seat - b.seat);
+  const winner = view.winner;
+  const players = [...view.players].sort((a, b) => Number(isMafiaTeam(b.role)) - Number(isMafiaTeam(a.role)) || a.seat - b.seat);
   const you = view.you;
-  const youWon = you && ((you.role === "mafia") === !village);
+  // The Mafia side includes a Defector who turned; the Jester wins alone.
+  const youWon =
+    !!you && (winner === "jester" ? you.role === "jester" : winner === "mafia" ? isMafiaTeam(you.role) : !isMafiaTeam(you.role) && you.role !== "jester");
+  const headline = winner === "village" ? "The Village wins!" : winner === "mafia" ? "The Mafia win!" : "The Jester wins!";
+  const tone = winner === "village" ? "text-amber" : winner === "mafia" ? "text-blood" : "text-pink-300";
 
   return (
     <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -20,11 +24,11 @@ export default function EndScreen({ view, onPlayAgain }: { view: PlayerView; onP
         animate={{ scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 180, damping: 16 }}
       >
-        <div className="text-5xl">{village ? "🌅" : "🕴️"}</div>
-        <h2 id="end-title" className={`mt-2 font-display text-3xl font-bold ${village ? "text-amber" : "text-blood"}`}>
-          {village ? "The Village wins!" : "The Mafia win!"}
+        <div className="text-5xl">{winner === "village" ? "🌅" : winner === "mafia" ? "🕴️" : "🃏"}</div>
+        <h2 id="end-title" className={`mt-2 font-display text-3xl font-bold ${tone}`}>
+          {headline}
         </h2>
-        {you && <p className="mt-1 text-muted">{youWon ? "You're on the winning side. 🎉" : "Better luck next time."}</p>}
+        {you && <p className="mt-1 text-muted">{youWon ? (winner === "jester" ? "You fooled them all. 🎉" : "You're on the winning side. 🎉") : "Better luck next time."}</p>}
         <p className="mt-3 text-sm text-cream/80">{view.narration.text}</p>
 
         <ul className="mt-5 space-y-1.5 text-left">
@@ -40,8 +44,9 @@ export default function EndScreen({ view, onPlayAgain }: { view: PlayerView; onP
                 {p.alive ? "" : "👻 "}
                 {p.name}
               </span>
-              <span className={`text-sm font-bold ${p.role === "mafia" ? "text-blood" : "text-cream"}`}>
+              <span className={`text-sm font-bold ${isMafiaTeam(p.role) ? "text-blood" : p.role === "jester" ? "text-pink-300" : "text-cream"}`}>
                 {p.role ? ROLE_INFO[p.role].title : "?"}
+                {p.defected && <span className="font-normal text-muted"> (Defector)</span>}
               </span>
             </motion.li>
           ))}
