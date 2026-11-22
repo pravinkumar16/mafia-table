@@ -10,6 +10,9 @@ export type ClientMessage =
   | { t: "ready" }
   | { t: "night"; targetId: string }
   | { t: "vote"; choice: VoteChoice }
+  | { t: "bomb"; targetId: string }
+  | { t: "overturn" }
+  | { t: "shield"; targetId: string }
   | { t: "skipDiscussion" }
   | { t: "playAgain" }
   | { t: "chat"; channel: Channel; text: string }
@@ -43,6 +46,7 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
     case "leave":
     case "start":
     case "ready":
+    case "overturn":
     case "skipDiscussion":
     case "playAgain":
       return { t: m.t };
@@ -54,6 +58,10 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
       return { t: "addBots", count: Math.max(1, Math.min(16, Math.floor(m.count))) };
     case "night":
       return str(m.targetId, 64) ? { t: "night", targetId: m.targetId } : null;
+    case "bomb":
+      return str(m.targetId, 64) ? { t: "bomb", targetId: m.targetId } : null;
+    case "shield":
+      return str(m.targetId, 64) ? { t: "shield", targetId: m.targetId } : null;
     case "vote":
       return str(m.choice, 64) ? { t: "vote", choice: m.choice } : null;
     case "chat":

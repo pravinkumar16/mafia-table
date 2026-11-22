@@ -60,7 +60,7 @@ describe("night", () => {
     s = act(s, { type: "NIGHT_ACTION", playerId: "p3", targetId: "p5", now: 3000 });
     s = act(s, { type: "NIGHT_ACTION", playerId: "p4", targetId: "p1", now: 4000 });
     expect(s.phase).toBe("morning");
-    expect(s.morning).toEqual({ round: 1, killedId: null, saved: true });
+    expect(s.morning).toEqual({ round: 1, killedId: null, saved: true, alsoDied: [] });
     expect(s.players.every((p) => p.alive)).toBe(true);
     expect(s.narration.event).toBe("morningSaved");
   });

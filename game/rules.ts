@@ -23,7 +23,7 @@ export type Feature = OptionalRole | "lovers" | "nightWatch" | "ghostHaunts";
  * Features whose game logic exists. Anything not listed shows as "coming soon"
  * in the panel and can't be switched on (the server enforces this too).
  */
-export const AVAILABLE_FEATURES: ReadonlySet<Feature> = new Set<Feature>([]);
+export const AVAILABLE_FEATURES: ReadonlySet<Feature> = new Set<Feature>([...OPTIONAL_ROLES, "lovers"]);
 
 export const DEFAULT_RULES: Rules = {
   mafiaCount: "auto",

@@ -48,7 +48,7 @@ export type NightStep = "mafia" | "doctor" | "detective";
 
 export type Channel = "public" | "mafia" | "ghost";
 
-export type Winner = "village" | "mafia";
+export type Winner = "village" | "mafia" | "jester";
 
 export const SKIP = "skip" as const;
 export type VoteChoice = string | typeof SKIP;
@@ -70,6 +70,20 @@ export interface Player {
   /** set once the role is public (death, vote-out or game over) */
   roleRevealed: boolean;
   ready: boolean;
+  /** Secret partner, if this player is one of the Lovers. */
+  lover: string | null;
+  /** A once-a-game power (Terrorist, Judge, Lawyer) has been spent. */
+  used: boolean;
+  /** Started as a Defector and has since joined the Mafia. */
+  defected: boolean;
+}
+
+/** A private message only its owner can read (heir inheritance, defection, lovers). */
+export interface PrivateNote {
+  id: number;
+  playerId: string;
+  round: number;
+  text: string;
 }
 
 export interface ChatMessage {
@@ -98,6 +112,12 @@ export type NarrationEvent =
   | "morningDeathHidden"
   | "morningSaved"
   | "morningQuiet"
+  | "loversFall"
+  | "terrorBomb"
+  | "judgeOverturn"
+  | "lawyerShield"
+  | "voteProposed"
+  | "jesterWins"
   | "dayStart"
   | "voteStart"
   | "voteElimination"
@@ -124,6 +144,8 @@ export interface MorningReport {
   round: number;
   killedId: string | null;
   saved: boolean;
+  /** Others who died with the victim (Lovers). */
+  alsoDied: string[];
 }
 
 export interface VoteReport {
@@ -132,7 +154,12 @@ export interface VoteReport {
   tally: Record<string, number>;
   /** voter id -> choice. Only public after the vote phase ends. */
   ballots: Record<string, VoteChoice>;
+  /** The town's choice. While `pending`, it's only proposed and a Judge may still overturn it. */
   eliminatedId: string | null;
+  pending: boolean;
+  overturned: boolean;
+  /** Votes against this player were void (the Lawyer's shield). */
+  immuneId: string | null;
 }
 
 export interface Settings {
@@ -169,6 +196,10 @@ export interface GameState {
   nextChatId: number;
   settings: Settings;
   rules: Rules;
+  /** The Lawyer's shield for the current day. */
+  immune: { round: number; targetId: string } | null;
+  notes: PrivateNote[];
+  nextNoteId: number;
 }
 
 export type Action =
@@ -189,6 +220,9 @@ export type Action =
   | { type: "READY"; playerId: string; now: number }
   | { type: "NIGHT_ACTION"; playerId: string; targetId: string; now: number }
   | { type: "VOTE"; playerId: string; choice: VoteChoice; now: number }
+  | { type: "TERRORIST_BOMB"; playerId: string; targetId: string; now: number }
+  | { type: "JUDGE_OVERTURN"; playerId: string; now: number }
+  | { type: "LAWYER_SHIELD"; playerId: string; targetId: string; now: number }
   | { type: "SKIP_DISCUSSION"; playerId: string; now: number }
   | { type: "PLAY_AGAIN"; playerId: string; now: number }
   | { type: "CHAT"; playerId: string; channel: Channel; text: string; now: number }

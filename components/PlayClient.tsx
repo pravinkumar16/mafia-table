@@ -18,6 +18,7 @@ import Lighting from "./Lighting";
 import HouseRules from "./HouseRules";
 import ChatPanel from "./ChatPanel";
 import PhasePanel, { CopyButton, TableCenter } from "./PhasePanel";
+import PowersPanel from "./PowersPanel";
 import EndScreen from "./EndScreen";
 
 const WAVE_PHASES = ["lobby", "morning", "day", "vote", "voteResult", "ended"];
@@ -164,7 +165,7 @@ export default function PlayClient() {
     night && me.myTurn
       ? me.targets
       : view.phase === "vote" && me.alive
-        ? view.players.filter((p) => p.alive && p.id !== me.id).map((p) => p.id)
+        ? view.players.filter((p) => p.alive && p.id !== me.id && p.id !== view.immuneId).map((p) => p.id)
         : [],
   );
   const selectedId = night ? me.myPick : view.phase === "vote" ? me.myVote : null;
@@ -245,6 +246,7 @@ export default function PlayClient() {
 
         <aside className="flex min-w-0 flex-col gap-4">
           <PhasePanel view={view} secondsLeft={secondsLeft} send={table.send} showBots={SHOW_DEV_BOTS && table.botsAllowed} inviteUrl={inviteUrl} />
+          <PowersPanel view={view} send={table.send} />
           {chatOpen && wide && <section className="panel h-[22rem] p-4">{chat}</section>}
         </aside>
       </main>

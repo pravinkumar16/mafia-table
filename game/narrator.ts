@@ -53,6 +53,36 @@ export const SCRIPT: Record<NarrationEvent, string[]> = {
     "Dawn breaks and every chair is filled. The Mafia must have overslept.",
     "Nobody died last night. Suspicious, isn't it?",
   ],
+  loversFall: [
+    "{partner} couldn't bear the loss and followed.",
+    "{partner} was secretly in love with them, and the town learns it too late.",
+    "A broken heart does the rest: {partner} is gone as well.",
+  ],
+  terrorBomb: [
+    "{name} slams a button nobody noticed. BOOM. {target} goes with them.",
+    "A shout, a flash, a lot of smoke: {name} takes {target} out with them.",
+    "{name} was the Terrorist all along. {target} was standing too close.",
+  ],
+  judgeOverturn: [
+    "{name} raises a gavel. The Judge overturns the verdict: nobody leaves today.",
+    "Order! {name} is the Judge, and today's verdict is struck from the record.",
+    "The Judge, {name}, shakes their head. The vote doesn't stand.",
+  ],
+  lawyerShield: [
+    "{name} stands up. The Lawyer takes {target} under their wing: the vote can't touch them today.",
+    "{name} is the Lawyer, and {target} is off the table for today's vote.",
+    "Objection! The Lawyer, {name}, has {target} covered. Votes against them won't count.",
+  ],
+  voteProposed: [
+    "The town has chosen {name}. Any last objections before the door closes?",
+    "The votes point at {name}. One more moment for anyone who wants to intervene.",
+    "{name} has the most votes. The verdict is about to be read.",
+  ],
+  jesterWins: [
+    "{name} was the Jester, and the town fell for it. The Jester wins!",
+    "The town votes out {name}, and the Jester cackles all the way to victory. The Jester wins!",
+    "Everyone was so sure. {name} was the Jester. The Jester wins!",
+  ],
   dayStart: [
     "Open your eyes. Talk it out — who's been acting shifty?",
     "The town square is open. Accuse, defend, and bluff away.",

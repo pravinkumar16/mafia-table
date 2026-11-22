@@ -140,6 +140,12 @@ export class Table {
         return fail(this.dispatch({ type: "NIGHT_ACTION", playerId: pid, targetId: msg.targetId, now }));
       case "vote":
         return fail(this.dispatch({ type: "VOTE", playerId: pid, choice: msg.choice, now }));
+      case "bomb":
+        return fail(this.dispatch({ type: "TERRORIST_BOMB", playerId: pid, targetId: msg.targetId, now }));
+      case "overturn":
+        return fail(this.dispatch({ type: "JUDGE_OVERTURN", playerId: pid, now }));
+      case "shield":
+        return fail(this.dispatch({ type: "LAWYER_SHIELD", playerId: pid, targetId: msg.targetId, now }));
       case "skipDiscussion":
         return fail(this.dispatch({ type: "SKIP_DISCUSSION", playerId: pid, now }));
       case "playAgain":

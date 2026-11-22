@@ -2,7 +2,16 @@
 // for one player. Hidden roles, night actions and vote targets are stripped
 // here, so a client can't leak what it was never sent.
 
-import { canReadChannel, canWriteChannel, findPlayer, hasActedTonight, validNightTargets } from "./engine";
+import {
+  canReadChannel,
+  canWriteChannel,
+  findPlayer,
+  hasActedTonight,
+  immuneToday,
+  isMafiaTeam,
+  nightStepOf,
+  validNightTargets,
+} from "./engine";
 import type {
   Channel,
   ChatMessage,
@@ -12,6 +21,7 @@ import type {
   Narration,
   NightStep,
   Phase,
+  PrivateNote,
   Role,
   Rules,
   Settings,
@@ -36,6 +46,8 @@ export interface PublicPlayer {
   roleRevealed: boolean;
   /** During the vote: whether they've voted (never who for). */
   hasVoted: boolean;
+  /** Only once the game is over: this player began as a Defector and turned Mafia. */
+  defected: boolean;
 }
 
 export interface YouView {
@@ -57,6 +69,12 @@ export interface YouView {
   /** Mafia only: teammate ids and their current night votes */
   mafiaTeam: string[];
   mafiaVotes: Record<string, string>;
+  /** A once-a-game power (Terrorist, Judge, Lawyer) is spent. */
+  used: boolean;
+  /** Lovers only: who you are in love with. */
+  loverId: string | null;
+  /** Private messages, yours alone. */
+  notes: PrivateNote[];
 }
 
 export interface PlayerView {
@@ -74,6 +92,8 @@ export interface PlayerView {
   /** Only once the vote is over. */
   voteReport: VoteReport | null;
   votesCast: number;
+  /** The Lawyer's shield for today, which is public. */
+  immuneId: string | null;
   winner: Winner | null;
   chat: Partial<Record<Channel, ChatMessage[]>>;
   canWrite: Record<Channel, boolean>;
@@ -84,12 +104,12 @@ export interface PlayerView {
 
 export function viewFor(s: GameState, playerId: string | null): PlayerView {
   const me = findPlayer(s, playerId);
-  const iAmMafia = me?.role === "mafia" && s.phase !== "lobby";
+  const iAmMafia = isMafiaTeam(me?.role) && s.phase !== "lobby";
   const night = s.phase === "night" ? s.night : null;
 
   const players: PublicPlayer[] = s.players.map((p) => {
     const visibleRole =
-      p.roleRevealed || p.id === me?.id || (iAmMafia && p.role === "mafia") ? p.role : null;
+      p.roleRevealed || p.id === me?.id || (iAmMafia && isMafiaTeam(p.role)) ? p.role : null;
     return {
       id: p.id,
       name: p.name,
@@ -104,12 +124,13 @@ export function viewFor(s: GameState, playerId: string | null): PlayerView {
       role: visibleRole,
       roleRevealed: p.roleRevealed,
       hasVoted: s.phase === "vote" && p.id in s.votes,
+      defected: s.phase === "ended" && p.defected,
     };
   });
 
   let you: YouView | null = null;
   if (me) {
-    const myTurn = !!night && me.alive && me.role === night.step;
+    const myTurn = !!night && me.alive && nightStepOf(me.role) === night.step;
     let myPick: string | null = null;
     if (myTurn && night) {
       if (night.step === "mafia") myPick = night.mafiaVotes[me.id] ?? null;
@@ -129,8 +150,11 @@ export function viewFor(s: GameState, playerId: string | null): PlayerView {
       myVote: s.phase === "vote" ? (s.votes[me.id] ?? null) : null,
       lastProtectedId: me.role === "doctor" ? s.lastDoctorTarget : null,
       detectiveResults: me.role === "detective" ? s.detectiveResults.map((r) => ({ ...r })) : [],
-      mafiaTeam: iAmMafia ? s.players.filter((p) => p.role === "mafia").map((p) => p.id) : [],
+      mafiaTeam: iAmMafia ? s.players.filter((p) => isMafiaTeam(p.role)).map((p) => p.id) : [],
       mafiaVotes: iAmMafia && night ? { ...night.mafiaVotes } : {},
+      used: me.used,
+      loverId: me.lover,
+      notes: s.notes.filter((n) => n.playerId === me.id).map((n) => ({ ...n })),
     };
   }
 
@@ -158,6 +182,7 @@ export function viewFor(s: GameState, playerId: string | null): PlayerView {
     morning: s.morning ? { ...s.morning } : null,
     voteReport: showVoteReport ? structuredClone(s.voteReport) : null,
     votesCast: s.phase === "vote" ? Object.keys(s.votes).length : 0,
+    immuneId: s.phase === "day" || s.phase === "vote" ? immuneToday(s) : null,
     winner: s.winner,
     chat,
     canWrite,
