@@ -38,6 +38,11 @@ export const SCRIPT: Record<NarrationEvent, string[]> = {
     "The rooster crows, but {name} doesn't. They were the {role}.",
     "Morning comes, and {name}'s chair is empty. They were the {role}.",
   ],
+  morningDeathHidden: [
+    "The sun rises on bad news. {name} was found at dawn. Their card stays face down.",
+    "The rooster crows, but {name} doesn't. Nobody gets to see their card.",
+    "Morning comes, and {name}'s chair is empty. What they were, the table will never know.",
+  ],
   morningSaved: [
     "Good morning! The Mafia struck in the night, but the Doctor got there first. Everyone wakes up.",
     "A close call! Someone was attacked last night, and the Doctor patched them up.",
@@ -62,6 +67,11 @@ export const SCRIPT: Record<NarrationEvent, string[]> = {
     "The town has spoken. {name} is out — they were the {role}.",
     "With {n} votes, {name} leaves the table. They were the {role}.",
     "{name} is escorted out of town. Their card reads: {role}.",
+  ],
+  voteEliminationHidden: [
+    "The town has spoken. {name} is out. Their card stays hidden.",
+    "With {n} votes, {name} leaves the table, taking their secret with them.",
+    "{name} is escorted out of town. Was it the right call? Nobody will say.",
   ],
   voteNoElimination: [
     "No agreement. Everyone keeps their seat, for now.",

@@ -4,6 +4,7 @@ import type { Channel, PlayerView, VoteChoice } from "../game";
 export type ClientMessage =
   | { t: "join"; name: string; bodyColor: string; skinColor: string }
   | { t: "leave" }
+  | { t: "setRules"; rules: Record<string, unknown> }
   | { t: "start" }
   | { t: "addBots"; count: number }
   | { t: "ready" }
@@ -45,6 +46,9 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
     case "skipDiscussion":
     case "playAgain":
       return { t: m.t };
+    case "setRules":
+      if (typeof m.rules !== "object" || m.rules === null || Array.isArray(m.rules)) return null;
+      return { t: "setRules", rules: m.rules as Record<string, unknown> };
     case "addBots":
       if (typeof m.count !== "number" || !Number.isFinite(m.count)) return null;
       return { t: "addBots", count: Math.max(1, Math.min(16, Math.floor(m.count))) };

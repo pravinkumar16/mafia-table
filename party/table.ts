@@ -3,7 +3,7 @@
 // Every state message is built per connection with viewFor(), so a socket
 // only ever receives the filtered view of the player it belongs to.
 
-import { createGame, findPlayer, planBotActions, reduce, viewFor, type Action, type GameState } from "../game";
+import { createGame, findPlayer, migrateState, planBotActions, reduce, viewFor, type Action, type GameState } from "../game";
 import { isValidSecret, parseClientMessage, type ServerMessage } from "../lib/protocol";
 
 export type Outbox = Array<[connId: string, msg: ServerMessage]>;
@@ -30,7 +30,7 @@ export class Table {
   ) {
     this.botsAllowed = opts.botsAllowed;
     this.newId = opts.newId;
-    this.state = opts.saved?.state ?? createGame(code, opts.seed, opts.now);
+    this.state = opts.saved?.state ? migrateState(opts.saved.state) : createGame(code, opts.seed, opts.now);
     this.secrets = opts.saved?.secrets ?? {};
   }
   readonly botsAllowed: boolean;
@@ -127,6 +127,8 @@ export class Table {
         if (this.state.phase === "lobby") delete this.secrets[secret];
         for (const [cid, sec] of this.conns) if (sec === secret) out.push([cid, { t: "welcome", playerId: this.playerIdFor(secret), botsAllowed: this.botsAllowed }]);
         return;
+      case "setRules":
+        return fail(this.dispatch({ type: "SET_RULES", playerId: pid, rules: msg.rules, now }));
       case "start":
         return fail(this.dispatch({ type: "START", playerId: pid, now }));
       case "addBots":

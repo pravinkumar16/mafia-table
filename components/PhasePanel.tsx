@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { SKIP, type PlayerView } from "@/game";
-import { MIN_PLAYERS, ROLE_INFO } from "@/game/roles";
+import { MIN_PLAYERS, ROLE_INFO, validateRules } from "@/game/roles";
 import type { ClientMessage } from "@/lib/protocol";
 import { formatClock } from "@/hooks/useCountdown";
 import RoleCard from "./RoleCard";
@@ -74,6 +74,7 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
 
   if (v.phase === "lobby") {
     const n = v.players.length;
+    const rulesProblem = n >= MIN_PLAYERS ? validateRules(n, v.rules) : null;
     return (
       <Card title="Waiting for players">
         <p className="text-sm text-muted">
@@ -84,9 +85,14 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
         <InviteLink url={inviteUrl} />
         {you.isHost ? (
           <div className="mt-3 flex flex-col gap-2">
-            <button className="btn-amber w-full py-3 text-lg" disabled={n < MIN_PLAYERS} onClick={() => send({ t: "start" })}>
+            <button className="btn-amber w-full py-3 text-lg" disabled={n < MIN_PLAYERS || !!rulesProblem} onClick={() => send({ t: "start" })}>
               Start game
             </button>
+            {rulesProblem && (
+              <p role="alert" className="rounded-xl bg-blood/10 px-3 py-2 text-xs text-blood">
+                {rulesProblem} Open <b>House rules</b> to fix it.
+              </p>
+            )}
             {showBots && (
               <button
                 className="btn-ghost w-full text-sm"
@@ -165,7 +171,14 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
       <Card title="Morning report">
         {victim ? (
           <p>
-            <b>{victim.name}</b> didn&apos;t survive the night. They were the <b>{ROLE_INFO[victim.role!]?.title}</b>.
+            <b>{victim.name}</b> didn&apos;t survive the night.{" "}
+            {victim.role ? (
+              <>
+                They were the <b>{ROLE_INFO[victim.role].title}</b>.
+              </>
+            ) : (
+              "Their role stays a secret."
+            )}
           </p>
         ) : m?.saved ? (
           <p>The Mafia struck, but the Doctor saved their target. 🩺</p>
@@ -220,7 +233,14 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
       <Card title="The verdict">
         {out ? (
           <p className="mb-3">
-            <b>{out.name}</b> is out. They were the <b>{ROLE_INFO[out.role!]?.title}</b>.
+            <b>{out.name}</b> is out.{" "}
+            {out.role ? (
+              <>
+                They were the <b>{ROLE_INFO[out.role].title}</b>.
+              </>
+            ) : (
+              "Their role stays a secret."
+            )}
           </p>
         ) : (
           <p className="mb-3">Nobody is eliminated today.</p>

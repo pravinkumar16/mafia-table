@@ -3,7 +3,8 @@
 // Math.random: time comes in on the action, randomness from state.rngSeed.
 
 import { createRng, type Rng } from "./rng";
-import { dealRoles, MAX_PLAYERS, MIN_PLAYERS, ROLE_INFO } from "./roles";
+import { dealRoles, MAX_PLAYERS, MIN_PLAYERS, ROLE_INFO, validateRules } from "./roles";
+import { DEFAULT_RULES, sanitizeRules } from "./rules";
 import { narrate } from "./narrator";
 import {
   SKIP,
@@ -65,7 +66,15 @@ export function createGame(code: string, seed: number, now: number, settings: Pa
     chat: [],
     nextChatId: 1,
     settings: { ...DEFAULT_SETTINGS, ...settings },
+    rules: structuredClone(DEFAULT_RULES),
   };
+}
+
+/** Fill in fields added after a table was saved, so old saved games still load. */
+export function migrateState(state: GameState): GameState {
+  const s = structuredClone(state);
+  s.rules = sanitizeRules(DEFAULT_RULES, s.rules);
+  return s;
 }
 
 // ---------- queries (also used by the view filter and bots) ----------
@@ -177,6 +186,8 @@ function apply(s: GameState, a: Action, rng: Rng): string | undefined {
       return leave(s, a.playerId);
     case "ADD_BOTS":
       return addBots(s, a.playerId, a.count, rng);
+    case "SET_RULES":
+      return setRules(s, a.playerId, a.rules);
     case "START":
       return start(s, a.playerId, a.now, rng);
     case "READY": {
@@ -305,11 +316,21 @@ function addBots(s: GameState, playerId: string, count: number, rng: Rng): strin
   return;
 }
 
+function setRules(s: GameState, playerId: string, patch: unknown): string | undefined {
+  if (s.phase !== "lobby") return "The rules can only be changed before the game starts.";
+  if (s.hostId !== playerId) return "Only the host can change the house rules.";
+  s.rules = sanitizeRules(s.rules, patch);
+  s.settings.discussionSeconds = s.rules.discussionSeconds;
+  return;
+}
+
 function start(s: GameState, playerId: string, now: number, rng: Rng): string | undefined {
   if (s.phase !== "lobby") return "The game has already started.";
   if (s.hostId !== playerId) return "Only the host can start the game.";
   if (s.players.length < MIN_PLAYERS) return `The table needs ${MIN_PLAYERS} or more players.`;
-  const roles = dealRoles(s.players.map((p) => p.id), rng);
+  const problem = validateRules(s.players.length, s.rules);
+  if (problem) return problem;
+  const roles = dealRoles(s.players.map((p) => p.id), rng, s.rules);
   for (const p of s.players) {
     p.role = roles[p.id];
     p.alive = true;
@@ -435,8 +456,11 @@ function resolveNight(s: GameState, now: number, rng: Rng) {
   if (killedId) {
     const victim = findPlayer(s, killedId)!;
     victim.alive = false;
-    victim.roleRevealed = true;
-    say(s, rng, "morningDeath", { name: victim.name, role: ROLE_INFO[victim.role!].title });
+    victim.roleRevealed = s.rules.revealRoles;
+    say(s, rng, s.rules.revealRoles ? "morningDeath" : "morningDeathHidden", {
+      name: victim.name,
+      role: ROLE_INFO[victim.role!].title,
+    });
   } else if (saved) {
     say(s, rng, "morningSaved");
   } else {
@@ -493,8 +517,12 @@ function resolveVote(s: GameState, now: number, rng: Rng) {
   if (eliminatedId) {
     const p = findPlayer(s, eliminatedId)!;
     p.alive = false;
-    p.roleRevealed = true;
-    say(s, rng, "voteElimination", { name: p.name, role: ROLE_INFO[p.role!].title, n: tally[eliminatedId] });
+    p.roleRevealed = s.rules.revealRoles;
+    say(s, rng, s.rules.revealRoles ? "voteElimination" : "voteEliminationHidden", {
+      name: p.name,
+      role: ROLE_INFO[p.role!].title,
+      n: tally[eliminatedId],
+    });
   } else {
     say(s, rng, "voteNoElimination");
   }

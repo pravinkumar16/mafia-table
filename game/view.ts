@@ -13,6 +13,7 @@ import type {
   NightStep,
   Phase,
   Role,
+  Rules,
   Settings,
   VoteChoice,
   VoteReport,
@@ -77,6 +78,8 @@ export interface PlayerView {
   chat: Partial<Record<Channel, ChatMessage[]>>;
   canWrite: Record<Channel, boolean>;
   settings: Settings;
+  /** House rules are public: everyone at the table can see which roles are in play. */
+  rules: Rules;
 }
 
 export function viewFor(s: GameState, playerId: string | null): PlayerView {
@@ -159,5 +162,6 @@ export function viewFor(s: GameState, playerId: string | null): PlayerView {
     chat,
     canWrite,
     settings: s.settings,
+    rules: structuredClone(s.rules),
   };
 }

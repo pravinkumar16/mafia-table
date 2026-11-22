@@ -281,7 +281,15 @@ export default function PlayClient() {
         onLeave={leave}
       />
 
-      <HouseRules open={rulesOpen} onClose={() => setRulesOpen(false)} />
+      <HouseRules
+        open={rulesOpen}
+        onClose={() => setRulesOpen(false)}
+        rules={view.rules}
+        playerCount={view.players.length}
+        canEdit={me.isHost && view.phase === "lobby"}
+        inLobby={view.phase === "lobby"}
+        onChange={(patch) => table.send({ t: "setRules", rules: patch })}
+      />
       {view.phase === "ended" && <EndScreen view={view} onPlayAgain={() => table.send({ t: "playAgain" })} />}
 
       <AnimatePresence>

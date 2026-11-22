@@ -1,6 +1,38 @@
 // Pure game types. No network, no UI.
 
-export type Role = "mafia" | "doctor" | "detective" | "villager";
+export type Role =
+  | "mafia"
+  | "doctor"
+  | "detective"
+  | "villager"
+  | "godfather"
+  | "terrorist"
+  | "judge"
+  | "lawyer"
+  | "heir"
+  | "defector"
+  | "mayor"
+  | "jester";
+
+/** Roles the host can switch on and off. The Doctor and Detective are always in play. */
+export type OptionalRole = "godfather" | "terrorist" | "judge" | "lawyer" | "heir" | "defector" | "mayor" | "jester";
+
+export type DiscussionSeconds = 60 | 90 | 120 | 180 | 300;
+
+/** House rules, chosen by the host in the lobby. Public to everyone at the table. */
+export interface Rules {
+  mafiaCount: "auto" | 1 | 2 | 3 | 4;
+  roles: Record<OptionalRole, boolean>;
+  /** Two town players are secretly in love: if one dies, so does the other. */
+  lovers: boolean;
+  /** Sleepers may keep watch at night for a noisy clue. */
+  nightWatch: boolean;
+  /** Each ghost may point the town at someone, once a game. */
+  ghostHaunts: boolean;
+  discussionSeconds: DiscussionSeconds;
+  /** Reveal a player's role when they die or are voted out. */
+  revealRoles: boolean;
+}
 
 export type Phase =
   | "lobby"
@@ -63,11 +95,13 @@ export type NarrationEvent =
   | "doctorWake"
   | "detectiveWake"
   | "morningDeath"
+  | "morningDeathHidden"
   | "morningSaved"
   | "morningQuiet"
   | "dayStart"
   | "voteStart"
   | "voteElimination"
+  | "voteEliminationHidden"
   | "voteNoElimination"
   | "villageWins"
   | "mafiaWins";
@@ -134,6 +168,7 @@ export interface GameState {
   chat: ChatMessage[];
   nextChatId: number;
   settings: Settings;
+  rules: Rules;
 }
 
 export type Action =
@@ -149,6 +184,7 @@ export type Action =
   | { type: "CONNECT"; playerId: string; now: number }
   | { type: "DISCONNECT"; playerId: string; now: number }
   | { type: "ADD_BOTS"; playerId: string; count: number; now: number }
+  | { type: "SET_RULES"; playerId: string; rules: unknown; now: number }
   | { type: "START"; playerId: string; now: number }
   | { type: "READY"; playerId: string; now: number }
   | { type: "NIGHT_ACTION"; playerId: string; targetId: string; now: number }

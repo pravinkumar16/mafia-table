@@ -45,6 +45,14 @@ const ROLE_CHIP: Record<string, string> = {
   doctor: "bg-emerald-400/90 text-ink",
   detective: "bg-night/90 text-ink",
   villager: "bg-amber/90 text-ink",
+  godfather: "bg-blood text-white",
+  terrorist: "bg-orange-500/90 text-ink",
+  judge: "bg-slate-300/90 text-ink",
+  lawyer: "bg-sky-300/90 text-ink",
+  heir: "bg-yellow-400/90 text-ink",
+  defector: "bg-purple-400/90 text-ink",
+  mayor: "bg-teal-300/90 text-ink",
+  jester: "bg-pink-400/90 text-ink",
 };
 
 export default function Table(props: Props) {
