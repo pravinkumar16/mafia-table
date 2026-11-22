@@ -48,6 +48,33 @@ npm run test        # engine + server tests
 npm run build       # production build, type-checked
 ```
 
+## House rules
+
+The host opens **House rules** in the lobby to choose how the game is played. Everyone at the
+table can read the rules; only the host can change them, and only before the game starts. The
+server validates every change, so a client can't turn on anything it shouldn't.
+
+- **Deal**: Classic (Mafia, Doctor, Detective), Chaos or Paranoia, or your own mix.
+- **Mafia**: Auto (2 for 7–8 players, 3 for 9–12, a quarter beyond) or 1–4. The Mafia must start outnumbered.
+- **Discussion time**: 1:00 to 5:00. **Show a role when someone is out** can be switched off.
+- The **Doctor and Detective are always in play.**
+
+| Role | What it does |
+| --- | --- |
+| Godfather | Takes a Mafia seat. The Detective reads them as innocent. |
+| Terrorist | Once a game, while the table is awake (morning, day, vote), goes out with a bang and takes one player along. |
+| Judge | Once a game, overturns a vote. With a Judge in the game every verdict waits 12 s first, so the wait reveals nothing. |
+| Lawyer | Once a game, shields one player: votes against them are void that day. Public. |
+| Mayor | Vote counts double. Public from the start. |
+| Heir | Inherits the first unused power to lose its owner: Doctor, Detective, Terrorist, Mayor, Judge or Lawyer. |
+| Defector | Reads as innocent. If every Mafia member is gone, joins the Mafia and the game goes on. |
+| Jester | Wins alone the moment the town votes them out. |
+| Lovers | Two townspeople are secretly paired. If one dies, so does the other. |
+| Night watch | Sleepers can keep watch and hear a clue at dawn (three names, one really was creeping around). The Mafia can tell how many are peeking. |
+| Ghost haunts | Once a game, each ghost points the town at someone for the day, anonymously. |
+
+If the chosen roles need more players than are seated, the lobby says so and **Start game** stays disabled.
+
 ## Deploy
 
 1. **PartyKit**: `npx partykit deploy`. Bots are off in production because

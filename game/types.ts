@@ -76,6 +76,8 @@ export interface Player {
   used: boolean;
   /** Started as a Defector and has since joined the Mafia. */
   defected: boolean;
+  /** This ghost has used its one haunt. */
+  hauntUsed: boolean;
 }
 
 /** A private message only its owner can read (heir inheritance, defection, lovers). */
@@ -118,6 +120,7 @@ export type NarrationEvent =
   | "lawyerShield"
   | "voteProposed"
   | "jesterWins"
+  | "ghostPoints"
   | "dayStart"
   | "voteStart"
   | "voteElimination"
@@ -138,6 +141,8 @@ export interface NightState {
   mafiaVotes: Record<string, string>;
   doctorTarget: string | null;
   detectiveTarget: string | null;
+  /** Sleepers keeping watch tonight (Night watch rule). */
+  watchers: string[];
 }
 
 export interface MorningReport {
@@ -198,6 +203,8 @@ export interface GameState {
   rules: Rules;
   /** The Lawyer's shield for the current day. */
   immune: { round: number; targetId: string } | null;
+  /** Public haunts: a ghost pointed at this player on this round. */
+  haunts: { round: number; targetId: string }[];
   notes: PrivateNote[];
   nextNoteId: number;
 }
@@ -223,6 +230,8 @@ export type Action =
   | { type: "TERRORIST_BOMB"; playerId: string; targetId: string; now: number }
   | { type: "JUDGE_OVERTURN"; playerId: string; now: number }
   | { type: "LAWYER_SHIELD"; playerId: string; targetId: string; now: number }
+  | { type: "NIGHT_WATCH"; playerId: string; now: number }
+  | { type: "GHOST_HAUNT"; playerId: string; targetId: string; now: number }
   | { type: "SKIP_DISCUSSION"; playerId: string; now: number }
   | { type: "PLAY_AGAIN"; playerId: string; now: number }
   | { type: "CHAT"; playerId: string; channel: Channel; text: string; now: number }

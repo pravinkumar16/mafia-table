@@ -15,7 +15,19 @@ const botRng = (s: GameState, bot: Player) =>
 
 /** Daylight powers. Bots use them now and then, so games with those roles get exercised. */
 function powerAction(s: GameState, bot: Player, rng: Rng, now: number): Action | null {
-  if (!bot.alive || bot.used) return null;
+  // Ghosts may haunt once, by day.
+  if (!bot.alive) {
+    if (s.rules.ghostHaunts && !bot.hauntUsed && (s.phase === "day" || s.phase === "vote") && rng.next() < 0.4) {
+      const targets = living(s);
+      if (targets.length) return { type: "GHOST_HAUNT", playerId: bot.id, targetId: rng.pick(targets).id, now };
+    }
+    return null;
+  }
+  // Sleepers sometimes keep watch.
+  if (s.rules.nightWatch && s.phase === "night" && s.night && !isMafiaTeam(bot.role) && !s.night.watchers.includes(bot.id) && rng.next() < 0.3) {
+    return { type: "NIGHT_WATCH", playerId: bot.id, now };
+  }
+  if (bot.used) return null;
   const others = living(s).filter((p) => p.id !== bot.id);
   if (bot.role === "terrorist" && (s.phase === "day" || s.phase === "vote") && others.length && rng.next() < 0.25) {
     return { type: "TERRORIST_BOMB", playerId: bot.id, targetId: rng.pick(others).id, now };

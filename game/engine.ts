@@ -78,6 +78,7 @@ export function createGame(code: string, seed: number, now: number, settings: Pa
     settings: { ...DEFAULT_SETTINGS, ...settings },
     rules: structuredClone(DEFAULT_RULES),
     immune: null,
+    haunts: [],
     notes: [],
     nextNoteId: 1,
   };
@@ -88,13 +89,16 @@ export function migrateState(state: GameState): GameState {
   const s = structuredClone(state);
   s.rules = sanitizeRules(DEFAULT_RULES, s.rules);
   s.immune ??= null;
+  s.haunts ??= [];
   s.notes ??= [];
   s.nextNoteId ??= 1;
   for (const p of s.players) {
     p.lover ??= null;
     p.used ??= false;
     p.defected ??= false;
+    p.hauntUsed ??= false;
   }
+  if (s.night) s.night.watchers ??= [];
   if (s.morning) s.morning.alsoDied ??= [];
   if (s.voteReport) {
     s.voteReport.pending ??= false;
@@ -244,6 +248,10 @@ function apply(s: GameState, a: Action, rng: Rng): string | undefined {
       return nightAction(s, a.playerId, a.targetId, a.now, rng);
     case "VOTE":
       return vote(s, a.playerId, a.choice, a.now, rng);
+    case "NIGHT_WATCH":
+      return nightWatch(s, a.playerId);
+    case "GHOST_HAUNT":
+      return ghostHaunt(s, a.playerId, a.targetId, a.now, rng);
     case "TERRORIST_BOMB":
       return terroristBomb(s, a.playerId, a.targetId, a.now, rng);
     case "JUDGE_OVERTURN":
@@ -274,6 +282,7 @@ const freshPlayerState = () => ({
   lover: null,
   used: false,
   defected: false,
+  hauntUsed: false,
 });
 
 function join(s: GameState, a: Extract<Action, { type: "JOIN" }>): string | undefined {
@@ -399,6 +408,7 @@ function start(s: GameState, playerId: string, now: number, rng: Rng): string | 
   s.voteReport = null;
   s.winner = null;
   s.immune = null;
+  s.haunts = [];
   s.notes = [];
   s.nextNoteId = 1;
   s.chat = s.chat.filter((m) => m.channel === "public");
@@ -506,7 +516,7 @@ function stepHasActor(s: GameState, step: NightStep) {
 function startNight(s: GameState, now: number, rng: Rng) {
   s.round += 1;
   s.votes = {};
-  s.night = { step: "mafia", mafiaVotes: {}, doctorTarget: null, detectiveTarget: null };
+  s.night = { step: "mafia", mafiaVotes: {}, doctorTarget: null, detectiveTarget: null, watchers: [] };
   const intro = narrate("nightFalls", rng);
   const first = NIGHT_STEPS.find((st) => stepHasActor(s, st));
   if (!first) return resolveNight(s, now, rng);
@@ -589,6 +599,7 @@ function resolveNight(s: GameState, now: number, rng: Rng) {
   s.night = null;
   setPhase(s, "morning", now, s.settings.morningSeconds);
   let alsoDied: string[] = [];
+  const culprits = Object.keys(votes);
   if (killedId) {
     const victim = findPlayer(s, killedId)!;
     kill(s, victim);
@@ -607,6 +618,52 @@ function resolveNight(s: GameState, now: number, rng: Rng) {
     say(s, rng, "morningQuiet");
   }
   s.morning = { round: s.round, killedId, saved, alsoDied };
+  // Whoever kept watch hears something, if they're still around to hear it.
+  for (const id of night.watchers) {
+    const w = findPlayer(s, id);
+    if (w?.alive) addNote(s, id, watchClue(s, rng, w, culprits));
+  }
+}
+
+/** Three names, one of whom really was creeping around. Only the watcher ever sees it. */
+function watchClue(s: GameState, rng: Rng, watcher: Player, culpritIds: string[]): string {
+  const culprits = culpritIds.filter((id) => findPlayer(s, id)?.alive).sort();
+  if (culprits.length === 0) return "You kept watch through the night, but heard nothing at all.";
+  const culprit = rng.pick(culprits);
+  const decoys = rng
+    .shuffle(living(s).filter((p) => p.id !== watcher.id && p.id !== culprit))
+    .slice(0, 2)
+    .map((p) => p.id);
+  const names = rng.shuffle([culprit, ...decoys]).map((id) => findPlayer(s, id)!.name);
+  return `You kept watch and heard a noise in the dark. Someone was creeping around, and it was one of: ${names.join(", ")}.`;
+}
+
+function nightWatch(s: GameState, playerId: string): string | undefined {
+  if (s.phase !== "night" || !s.night) return "It isn't night.";
+  if (!s.rules.nightWatch) return "Night watch isn't part of these house rules.";
+  const me = findPlayer(s, playerId);
+  if (!me || !me.alive) return "Ghosts can't keep watch.";
+  if (isMafiaTeam(me.role)) return "The Mafia are already awake.";
+  if (s.night.watchers.includes(playerId)) return "You're already keeping watch.";
+  s.night.watchers.push(playerId);
+  return;
+}
+
+function ghostHaunt(s: GameState, playerId: string, targetId: string, now: number, rng: Rng): string | undefined {
+  if (!s.rules.ghostHaunts) return "Ghost haunts aren't part of these house rules.";
+  if (s.phase !== "day" && s.phase !== "vote") return "Ghosts can only haunt during the day.";
+  const me = findPlayer(s, playerId);
+  if (!me || me.alive) return "Only ghosts can haunt.";
+  if (me.hauntUsed) return "You've already haunted someone.";
+  const target = findPlayer(s, targetId);
+  if (!target || !target.alive) return "Pick a living player.";
+  me.hauntUsed = true;
+  s.haunts.push({ round: s.round, targetId });
+  // Anonymous: the town learns that a ghost pointed, not which one.
+  s.chat.push({ id: s.nextChatId++, channel: "public", fromId: "system", fromName: "👻", text: `A ghost points at ${target.name}.`, at: now });
+  if (s.chat.length > MAX_CHAT_MESSAGES) s.chat = s.chat.slice(-MAX_CHAT_MESSAGES);
+  say(s, rng, "ghostPoints", { name: target.name });
+  return;
 }
 
 // ---------- day & vote ----------
@@ -800,6 +857,7 @@ function playAgain(s: GameState, playerId: string, now: number, rng: Rng): strin
   s.detectiveResults = [];
   s.lastDoctorTarget = null;
   s.immune = null;
+  s.haunts = [];
   s.notes = [];
   s.nextNoteId = 1;
   s.chat = s.chat.filter((m) => m.channel === "public");

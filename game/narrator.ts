@@ -83,6 +83,11 @@ export const SCRIPT: Record<NarrationEvent, string[]> = {
     "The town votes out {name}, and the Jester cackles all the way to victory. The Jester wins!",
     "Everyone was so sure. {name} was the Jester. The Jester wins!",
   ],
+  ghostPoints: [
+    "A chill crosses the table. A ghost drifts over to {name} and points.",
+    "Somewhere in the dark, a ghost points a pale finger at {name}.",
+    "A ghost says nothing, but its finger is aimed squarely at {name}.",
+  ],
   dayStart: [
     "Open your eyes. Talk it out — who's been acting shifty?",
     "The town square is open. Accuse, defend, and bluff away.",

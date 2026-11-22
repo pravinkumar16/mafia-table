@@ -158,6 +158,11 @@ function Seat({
             🔪{picks > 1 ? `×${picks}` : ""}
           </span>
         )}
+        {view.hauntedIds.includes(p.id) && (
+          <span className="absolute -top-1 right-1 z-20 text-xl" title="A ghost pointed at them" aria-label="haunted">
+            👻
+          </span>
+        )}
         {view.phase === "vote" && p.hasVoted && (
           <span className="absolute -left-1 top-1 z-20 rounded-full bg-amber px-1.5 py-0.5 text-[11px] font-bold text-ink shadow">✓</span>
         )}

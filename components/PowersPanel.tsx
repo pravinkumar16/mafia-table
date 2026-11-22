@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import type { PlayerView } from "@/game";
+import { isMafiaTeam, type PlayerView } from "@/game";
 import type { ClientMessage } from "@/lib/protocol";
 
 const nameOf = (v: PlayerView, id: string | null | undefined) => v.players.find((p) => p.id === id)?.name ?? "someone";
@@ -11,7 +11,7 @@ const nameOf = (v: PlayerView, id: string | null | undefined) => v.players.find(
  * only to the player it belongs to: the server never sends anyone else's.
  */
 export default function PowersPanel({ view, send }: { view: PlayerView; send: (m: ClientMessage) => void }) {
-  const [picking, setPicking] = useState<"bomb" | "shield" | null>(null);
+  const [picking, setPicking] = useState<"bomb" | "shield" | "haunt" | null>(null);
   const [target, setTarget] = useState<string | null>(null);
 
   const you = view.you;
@@ -22,6 +22,9 @@ export default function PowersPanel({ view, send }: { view: PlayerView; send: (m
   const canBomb = you.role === "terrorist" && you.alive && !you.used && (phase === "morning" || phase === "day" || phase === "vote");
   const canShield = you.role === "lawyer" && you.alive && !you.used && (phase === "day" || phase === "vote");
   const canOverturn = you.role === "judge" && you.alive && !you.used && phase === "voteResult" && !!view.voteReport?.pending;
+  const canWatch = phase === "night" && view.rules.nightWatch && you.alive && !isMafiaTeam(you.role);
+  const canHaunt = !you.alive && view.rules.ghostHaunts && !you.hauntUsed && (phase === "day" || phase === "vote");
+  const mafiaEyes = phase === "night" && isMafiaTeam(you.role) && you.watchers > 0;
   const loverName = you.loverId ? nameOf(view, you.loverId) : null;
   const loverAlive = you.loverId ? view.players.find((p) => p.id === you.loverId)?.alive : false;
 
@@ -36,7 +39,7 @@ export default function PowersPanel({ view, send }: { view: PlayerView; send: (m
     close();
   };
 
-  const hasAnything = canBomb || canShield || canOverturn || you.notes.length > 0 || (!!loverName && you.alive) || (you.alive && (you.role === "mayor" || you.role === "heir"));
+  const hasAnything = canWatch || canHaunt || mafiaEyes || canBomb || canShield || canOverturn || you.notes.length > 0 || (!!loverName && you.alive) || (you.alive && (you.role === "mayor" || you.role === "heir"));
   if (!hasAnything) return null;
 
   return (
@@ -52,6 +55,48 @@ export default function PowersPanel({ view, send }: { view: PlayerView; send: (m
           💘 In love with <b>{loverName}</b>
           {loverAlive ? "." : " (gone)."}
         </p>
+      )}
+
+      {mafiaEyes && (
+        <p className="text-sm">
+          👀 <b>{you.watchers}</b> {you.watchers === 1 ? "sleeper is" : "sleepers are"} peeking through the dark tonight.
+        </p>
+      )}
+
+      {canWatch && (
+        <div>
+          <p className="text-sm font-semibold">👀 Keep watch</p>
+          {you.watching ? (
+            <p className="mt-0.5 text-xs text-night">You&apos;re keeping watch. If you hear something, you&apos;ll know in the morning.</p>
+          ) : (
+            <>
+              <p className="mt-0.5 text-xs text-muted">Peek through the dark for a noisy clue, heard at dawn. The Mafia will know someone is peeking.</p>
+              <button className="btn-ghost mt-2 w-full" onClick={() => send({ t: "watch" })}>
+                Keep watch
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {canHaunt && (
+        <Power
+          icon="👻"
+          title="Haunt someone"
+          blurb="Once a game: point the whole town at someone for today. Nobody learns which ghost did it."
+          action="Pick someone"
+          open={picking === "haunt"}
+          onOpen={() => {
+            setPicking("haunt");
+            setTarget(null);
+          }}
+          onClose={close}
+        >
+          <Choices view={view} ids={choices.map((p) => p.id)} target={target} onPick={setTarget} />
+          <button className="btn-amber mt-2 w-full" disabled={!target} onClick={confirm}>
+            👻 Point{target ? ` at ${nameOf(view, target)}` : ""}
+          </button>
+        </Power>
       )}
 
       {canBomb && (

@@ -75,6 +75,12 @@ export interface YouView {
   loverId: string | null;
   /** Private messages, yours alone. */
   notes: PrivateNote[];
+  /** Night watch: you're keeping watch tonight. */
+  watching: boolean;
+  /** Mafia only, at night: how many sleepers are keeping watch. */
+  watchers: number;
+  /** Ghosts: your one haunt is spent. */
+  hauntUsed: boolean;
 }
 
 export interface PlayerView {
@@ -94,6 +100,8 @@ export interface PlayerView {
   votesCast: number;
   /** The Lawyer's shield for today, which is public. */
   immuneId: string | null;
+  /** Living players a ghost pointed at today. Which ghost is never sent. */
+  hauntedIds: string[];
   winner: Winner | null;
   chat: Partial<Record<Channel, ChatMessage[]>>;
   canWrite: Record<Channel, boolean>;
@@ -155,6 +163,9 @@ export function viewFor(s: GameState, playerId: string | null): PlayerView {
       used: me.used,
       loverId: me.lover,
       notes: s.notes.filter((n) => n.playerId === me.id).map((n) => ({ ...n })),
+      watching: !!night && night.watchers.includes(me.id),
+      watchers: iAmMafia && night ? night.watchers.length : 0,
+      hauntUsed: me.hauntUsed,
     };
   }
 
@@ -183,6 +194,10 @@ export function viewFor(s: GameState, playerId: string | null): PlayerView {
     voteReport: showVoteReport ? structuredClone(s.voteReport) : null,
     votesCast: s.phase === "vote" ? Object.keys(s.votes).length : 0,
     immuneId: s.phase === "day" || s.phase === "vote" ? immuneToday(s) : null,
+    hauntedIds:
+      s.phase === "day" || s.phase === "vote"
+        ? s.haunts.filter((h) => h.round === s.round && findPlayer(s, h.targetId)?.alive).map((h) => h.targetId)
+        : [],
     winner: s.winner,
     chat,
     canWrite,

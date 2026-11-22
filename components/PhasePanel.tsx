@@ -201,6 +201,9 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
       <Card title="Discussion">
         <p className="text-sm text-muted">Talk it out. Who&apos;s been acting shifty? Voting starts when the timer runs out.</p>
         {v.immuneId && <p className="mt-2 text-sm">🛡️ <b>{nameOf(v, v.immuneId)}</b> is shielded from today&apos;s vote.</p>}
+        {v.hauntedIds.length > 0 && (
+          <p className="mt-2 text-sm">👻 A ghost pointed at <b>{v.hauntedIds.map((id) => nameOf(v, id)).join(" and ")}</b> today.</p>
+        )}
         {you.isHost && (
           <button className="btn-ghost mt-3 w-full" onClick={() => send({ t: "skipDiscussion" })}>
             ⏭ Skip to the vote
@@ -219,6 +222,9 @@ export default function PhasePanel({ view, secondsLeft, send, showBots, inviteUr
       <Card title="Cast your vote">
         <p className="mb-2 text-xs text-muted">Votes stay secret until everyone has voted or time runs out. You can change yours until then.</p>
         {v.immuneId && <p className="mb-2 text-xs">🛡️ <b>{nameOf(v, v.immuneId)}</b> is shielded today, so they can&apos;t be voted for.</p>}
+        {v.hauntedIds.length > 0 && (
+          <p className="mb-2 text-xs">👻 A ghost pointed at <b>{v.hauntedIds.map((id) => nameOf(v, id)).join(" and ")}</b>.</p>
+        )}
         <TargetList view={v} ids={ids} selected={you.myVote} onPick={(id) => send({ t: "vote", choice: id })} />
         <button
           className={`btn mt-2 w-full border ${you.myVote === SKIP ? "border-amber bg-amber/20" : "border-white/15 bg-white/5"}`}

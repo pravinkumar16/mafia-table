@@ -140,6 +140,10 @@ export class Table {
         return fail(this.dispatch({ type: "NIGHT_ACTION", playerId: pid, targetId: msg.targetId, now }));
       case "vote":
         return fail(this.dispatch({ type: "VOTE", playerId: pid, choice: msg.choice, now }));
+      case "watch":
+        return fail(this.dispatch({ type: "NIGHT_WATCH", playerId: pid, now }));
+      case "haunt":
+        return fail(this.dispatch({ type: "GHOST_HAUNT", playerId: pid, targetId: msg.targetId, now }));
       case "bomb":
         return fail(this.dispatch({ type: "TERRORIST_BOMB", playerId: pid, targetId: msg.targetId, now }));
       case "overturn":

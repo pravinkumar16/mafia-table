@@ -177,7 +177,7 @@ export default function HouseRules({ open, onClose, rules, playerCount, canEdit,
             <ul className="divide-y divide-white/5">
               <Row
                 title="Night watch"
-                blurb="Sleepers can keep watch for a noisy clue."
+                blurb="Sleepers can keep watch for a noisy clue at dawn. The Mafia can tell how many are peeking."
                 on={rules.nightWatch}
                 available={AVAILABLE_FEATURES.has("nightWatch" as Feature)}
                 disabled={locked}
